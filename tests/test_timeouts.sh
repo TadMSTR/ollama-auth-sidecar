@@ -35,6 +35,7 @@ fi
 
 # Write a minimal config with a 2s timeout (shorter than mock-upstream's 3s sleep)
 TIMEOUT_CONFIG=$(mktemp /tmp/timeout-config-XXXXXX.yaml)
+chmod 644 "$TIMEOUT_CONFIG"
 cat > "$TIMEOUT_CONFIG" <<'YAML'
 services:
   - name: timeout-test
@@ -65,7 +66,7 @@ sleep 4
 status=$(docker inspect "$container_id" --format '{{.State.Status}}' 2>/dev/null || echo "gone")
 if [ "$status" != "running" ]; then
     echo "ERROR: sidecar container exited early (status: $status) — entrypoint log:" >&2
-    docker logs "$container_id" >&2 2>/dev/null || true
+    docker logs "$container_id" 2>&1 || true
     docker rm -f "$container_id" > /dev/null 2>/dev/null || true
     rm -f "$TIMEOUT_CONFIG"
     assert_equals "upstream timeout returns 504" "504" "container-exited-early"
@@ -73,8 +74,10 @@ if [ "$status" != "running" ]; then
     exit 1
 fi
 
-# Hit /slow from the host (upstream sleeps 3s); with 2s timeout we expect 504
-http_code=$(wget -qO/dev/null --server-response "http://127.0.0.1:11450/slow" 2>&1 \
+# Hit /slow from the host (upstream sleeps 3s); with 2s timeout we expect 504.
+# --tries=1 disables GNU wget's default retry-on-failure; without it wget retries
+# 3 times, each time getting another 504, and the command takes much longer.
+http_code=$(wget -qO/dev/null --server-response --tries=1 "http://127.0.0.1:11450/slow" 2>&1 \
     | awk '/HTTP\//{print $2}' | tail -1)
 
 docker rm -f "$container_id" > /dev/null
