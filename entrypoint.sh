@@ -59,23 +59,29 @@ is_valid_port() {
 
 # Escape a value so it is safe inside an nginx double-quoted string.
 # Rejects characters that cannot be safely represented.
+# Note: uses POSIX sh compatible constructs (ash-safe; no bash $'\n' escapes).
 escape_header_value() {
     local val="$1"
-    # Reject newlines — these cannot appear in an nginx header directive
+
+    # Reject newlines — these cannot appear in an nginx header directive.
+    # Use printf to produce a literal newline for the comparison (ash-safe).
+    local newline
+    newline=$(printf '\n')
     case "$val" in
-        *$'\n'*) die "Header value contains a newline, which is not allowed in nginx directives" ;;
+        *"$newline"*) die "Header value for service '${SERVICE_CTX:-unknown}' contains a newline, which is not allowed in nginx directives" ;;
     esac
-    # Reject null bytes
-    case "$val" in
-        *$'\0'*) die "Header value contains a null byte" ;;
-    esac
+
+    # Null bytes cannot appear in shell environment variables (OS strips them),
+    # so no explicit check is needed here.
+
     # Escape backslash and double-quote for embedding inside nginx double-quotes
     val=$(printf '%s' "$val" | sed 's/\\/\\\\/g; s/"/\\"/g')
-    # Reject bare $ that are not part of a valid nginx variable reference (i.e. not $var or ${var})
-    # At this stage all ${ENV_VAR} tokens are already expanded, so any remaining $ is suspicious
+
+    # Reject bare $ remaining after env-var expansion — all ${VAR} tokens were
+    # already resolved; a leftover $ indicates an unterminated reference.
     case "$val" in
         *\$*)
-            die "Header value contains a bare '$' after env-var expansion. Check config for unterminated variable references."
+            die "Header value for service '${SERVICE_CTX:-unknown}' contains a bare '\$' after env-var expansion. Check config for unterminated variable references."
             ;;
     esac
     printf '%s' "$val"
@@ -168,8 +174,9 @@ ${block}
     done
 
     # Write final nginx.conf
+    # Note: no 'user' directive — container already runs as the nginx user (uid 101)
+    # via USER in Dockerfile. The 'user' directive requires root to take effect.
     cat > "$NGINX_CONF" <<NGINX_HEADER
-user nginx;
 worker_processes auto;
 error_log /dev/stderr warn;
 pid /tmp/nginx.pid;
