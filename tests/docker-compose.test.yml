@@ -35,6 +35,17 @@ services:
       interval: 2s
       timeout: 5s
       retries: 15
+    # Hardening consistent with compose.mode-a/b examples
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: nginx
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=101,gid=101
+      - /var/run:uid=101,gid=101
+      - /tmp:uid=101,gid=101
 
 networks:
   test-net:

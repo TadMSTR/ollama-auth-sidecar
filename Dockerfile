@@ -4,7 +4,10 @@ FROM nginx:1.27-alpine
 RUN apk add --no-cache yq gettext
 
 # Standard config path; override via CONFIG_PATH env var
-RUN mkdir -p /etc/ollama-auth-sidecar
+# Also pre-create nginx runtime dirs owned by the nginx user so the process
+# can start without root — /var/cache/nginx is owned by root in the base image.
+RUN mkdir -p /etc/ollama-auth-sidecar \
+    && chown -R nginx:nginx /var/cache/nginx /var/run
 
 COPY entrypoint.sh /entrypoint.sh
 COPY templates/ /templates/
