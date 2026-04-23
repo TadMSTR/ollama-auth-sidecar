@@ -8,9 +8,18 @@ echo "=== test_config_validation ==="
 
 FIXTURES_DIR="$(dirname "$0")/fixtures/bad-configs"
 
-# image tag used during tests
-IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "^ollama-auth-sidecar" | head -1)
-[ -n "$IMAGE" ] || IMAGE="ollama-auth-sidecar:latest"
+# Resolve sidecar image — prefer CI tag, then compose-built test image, then dev tag
+if docker image inspect ollama-auth-sidecar:ci > /dev/null 2>&1; then
+    IMAGE="ollama-auth-sidecar:ci"
+elif docker image inspect ollama-auth-sidecar-test-sidecar:latest > /dev/null 2>&1; then
+    IMAGE="ollama-auth-sidecar-test-sidecar:latest"
+elif docker image inspect ollama-auth-sidecar:dev > /dev/null 2>&1; then
+    IMAGE="ollama-auth-sidecar:dev"
+else
+    echo "ERROR: no sidecar image found — build it first" >&2
+    exit 1
+fi
+echo "Using image: $IMAGE"
 
 run_bad_config() {
     local fixture="$1"
@@ -20,6 +29,9 @@ run_bad_config() {
 
     output=$(docker run --rm \
         -e TEST_KEY=some-value \
+        --tmpfs /tmp:uid=101,gid=101 \
+        --tmpfs /var/cache/nginx:uid=101,gid=101 \
+        --tmpfs /var/run:uid=101,gid=101 \
         -v "${fixture}:/etc/ollama-auth-sidecar/config.yaml:ro" \
         "$IMAGE" 2>&1) && exit_code=0 || exit_code=$?
 

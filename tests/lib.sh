@@ -68,7 +68,7 @@ wait_for_sidecar() {
         # Fallback: poll
         local i=0
         while [ $i -lt 30 ]; do
-            if $COMPOSE exec -T sidecar wget -q -O- http://localhost:11436/health > /dev/null 2>&1; then
+            if $COMPOSE exec -T sidecar wget -q -O- http://127.0.0.1:11436/health > /dev/null 2>&1; then
                 echo "Sidecar ready."
                 return 0
             fi

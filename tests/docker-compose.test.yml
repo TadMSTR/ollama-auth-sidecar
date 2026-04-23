@@ -31,7 +31,7 @@ services:
       mock-upstream:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://localhost:11436/health"]
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:11436/health"]
       interval: 2s
       timeout: 5s
       retries: 15

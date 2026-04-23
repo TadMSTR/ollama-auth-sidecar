@@ -16,7 +16,7 @@ start=$(date +%s)
 
 # wget doesn't support streaming well; use curl inside the sidecar container
 $COMPOSE exec -T sidecar \
-    wget -q -O- "http://localhost:11436/stream" > "$tmpfile" 2>&1
+    wget -q -O- "http://127.0.0.1:11436/stream" > "$tmpfile" 2>&1
 
 end=$(date +%s)
 elapsed=$((end - start))

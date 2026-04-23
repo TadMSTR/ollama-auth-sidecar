@@ -9,7 +9,7 @@ echo "=== test_log_redaction ==="
 wait_for_sidecar
 
 # Make a request that will produce an access log entry
-$COMPOSE exec -T sidecar wget -q -O- http://localhost:11436/ > /dev/null 2>&1
+$COMPOSE exec -T sidecar wget -q -O- http://127.0.0.1:11436/ > /dev/null 2>&1
 
 # Give nginx a moment to flush the log
 sleep 1
