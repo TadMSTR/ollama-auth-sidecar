@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1] — 2026-04-23
+
+### Security
+- Replace `$request_uri` with `$uri` in nginx log format — prevents query strings from appearing in container stdout (relevant if upstream uses query-string API keys)
+- Add test coverage for newline-in-header-value rejection (`header-special-chars.yaml` fixture now exercised in CI)
+- Pin all GitHub Actions `uses:` references to commit SHAs in `ci.yml` and `release.yml`
+
 ## [0.1.0] — 2026-04-23
 
 ### Added
