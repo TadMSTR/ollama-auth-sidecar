@@ -1,0 +1,37 @@
+# Mode A — host networking (recommended default)
+#
+# The sidecar binds to 127.0.0.1:<port> on the Docker host.
+# PM2 services and other host processes reach it at http://127.0.0.1:<port>.
+# Containerized consumers on the same host can reach it via host.docker.internal:<port>.
+#
+# WARNING: host networking exposes the sidecar's ports on the host's loopback.
+# The default NGINX_BIND=127.0.0.1 keeps traffic host-local only.
+# Never change NGINX_BIND to 0.0.0.0 in this mode on an untrusted network —
+# doing so exposes upstream credentials to any host that can reach those ports.
+
+name: ollama-auth-sidecar
+
+services:
+  ollama-auth-sidecar:
+    image: ghcr.io/tadmstr/ollama-auth-sidecar:latest
+    network_mode: host
+    environment:
+      NGINX_BIND: "127.0.0.1"
+      CONFIG_PATH: /etc/ollama-auth-sidecar/config.yaml
+      # Scope to only the keys this service needs — do not use env_file: .env
+      OPENWEBUI_KEY: "${OPENWEBUI_KEY}"
+      MEMSEARCH_KEY: "${MEMSEARCH_KEY}"
+    volumes:
+      - ./config.yaml:/etc/ollama-auth-sidecar/config.yaml:ro
+    restart: unless-stopped
+    # Security hardening — copy these defaults, do not remove them
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: nginx
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=101,gid=101
+      - /var/run:uid=101,gid=101
+      - /tmp:uid=101,gid=101

@@ -1,0 +1,6 @@
+services:
+  - name: test
+    listen: 11436
+    timeout: 30s
+    headers:
+      Authorization: "Bearer ${TEST_KEY}"

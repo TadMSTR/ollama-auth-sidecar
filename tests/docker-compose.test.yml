@@ -1,0 +1,41 @@
+name: ollama-auth-sidecar-test
+
+services:
+  mock-upstream:
+    build:
+      context: fixtures/mock-upstream
+    environment:
+      SLOW_SECONDS: "3"
+    networks:
+      - test-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  sidecar:
+    build:
+      context: ..
+    environment:
+      NGINX_BIND: "0.0.0.0"
+      CONFIG_PATH: /etc/ollama-auth-sidecar/config.yaml
+      OPENWEBUI_KEY: "${OPENWEBUI_KEY:-test-openwebui-key}"
+      MEMSEARCH_KEY: "${MEMSEARCH_KEY:-test-memsearch-key}"
+      SPECIAL_KEY: "${SPECIAL_KEY:-test/special&key}"
+    volumes:
+      - ./fixtures/test-config.yaml:/etc/ollama-auth-sidecar/config.yaml:ro
+    networks:
+      - test-net
+    depends_on:
+      mock-upstream:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:11436/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+networks:
+  test-net:
+    driver: bridge

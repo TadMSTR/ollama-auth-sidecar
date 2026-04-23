@@ -1,0 +1,7 @@
+services:
+  - name: test
+    listen: 11436
+    upstream: not-a-url
+    timeout: 30s
+    headers:
+      Authorization: "Bearer ${TEST_KEY}"

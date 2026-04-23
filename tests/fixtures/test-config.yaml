@@ -1,0 +1,22 @@
+services:
+  - name: openwebui
+    listen: 11436
+    upstream: http://mock-upstream:8080
+    timeout: 30s
+    headers:
+      Authorization: "Bearer ${OPENWEBUI_KEY}"
+
+  - name: memsearch
+    listen: 11437
+    upstream: http://mock-upstream:8080
+    timeout: 60s
+    headers:
+      Authorization: "Bearer ${MEMSEARCH_KEY}"
+      X-Client-Extra: "memsearch-client"
+
+  - name: special-chars
+    listen: 11438
+    upstream: http://mock-upstream:8080
+    timeout: 30s
+    headers:
+      X-Api-Key: "${SPECIAL_KEY}"

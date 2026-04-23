@@ -1,0 +1,38 @@
+# ollama-auth-sidecar — example config
+#
+# Copy this file to config.yaml and populate your env vars.
+# NEVER put literal API keys here — use ${ENV_VAR} references only.
+# See SECURITY.md for why.
+#
+# Config file location: /etc/ollama-auth-sidecar/config.yaml (override via CONFIG_PATH)
+
+services:
+  # Example 1: Open WebUI pointing at Ollama with Bearer auth
+  - name: openwebui
+    listen: 11436             # clients connect here instead of Ollama's 11434
+    # Docker network consumer (Mode B / same docker network):
+    upstream: http://ollama:11434
+    # Host-local consumer (Mode A / host networking):
+    # upstream: http://host.docker.internal:11434
+    timeout: 300s             # generation calls can be long; adjust to your model
+    headers:
+      Authorization: "Bearer ${OPENWEBUI_KEY}"
+
+  # Example 2: A community tool that doesn't support Authorization headers
+  - name: memsearch-watch
+    listen: 11437
+    upstream: http://ollama:11434
+    # upstream: http://host.docker.internal:11434
+    timeout: 60s
+    headers:
+      Authorization: "Bearer ${MEMSEARCH_KEY}"
+
+  # Example 3: Non-Ollama service with a different auth scheme
+  - name: custom-api
+    listen: 11438
+    upstream: http://some-internal-service:8080
+    timeout: 30s
+    headers:
+      X-API-Key: "${CUSTOM_API_KEY}"
+      # Multiple headers are supported
+      X-Tenant-ID: "${TENANT_ID}"

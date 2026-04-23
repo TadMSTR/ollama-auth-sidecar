@@ -1,0 +1,7 @@
+services:
+  - name: test
+    listen: 80
+    upstream: http://mock-upstream:8080
+    timeout: 30s
+    headers:
+      Authorization: "Bearer ${TEST_KEY}"

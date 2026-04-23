@@ -1,0 +1,52 @@
+# Mode B — shared bridge network
+#
+# The sidecar and consumer containers join a dedicated named network.
+# Consumer containers reach the sidecar by service name: http://ollama-auth-sidecar:<port>.
+# The sidecar binds to 0.0.0.0 within that network only.
+#
+# IMPORTANT: Only services that need to use the sidecar should join ollama-auth-net.
+# Unrelated containers must NOT join this network — any container on the network
+# can use the sidecar's ports and have upstream credentials injected on their behalf.
+
+name: ollama-auth-sidecar
+
+services:
+  ollama-auth-sidecar:
+    image: ghcr.io/tadmstr/ollama-auth-sidecar:latest
+    networks:
+      - ollama-auth-net
+    environment:
+      NGINX_BIND: "0.0.0.0"
+      CONFIG_PATH: /etc/ollama-auth-sidecar/config.yaml
+      # Scope to only the keys this service needs — do not use env_file: .env
+      OPENWEBUI_KEY: "${OPENWEBUI_KEY}"
+      MEMSEARCH_KEY: "${MEMSEARCH_KEY}"
+    volumes:
+      - ./config.yaml:/etc/ollama-auth-sidecar/config.yaml:ro
+    restart: unless-stopped
+    # Security hardening — copy these defaults, do not remove them
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: nginx
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=101,gid=101
+      - /var/run:uid=101,gid=101
+      - /tmp:uid=101,gid=101
+
+  # Example consumer — replace with your actual application
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    networks:
+      - ollama-auth-net
+    environment:
+      # Point Open WebUI at the sidecar instead of Ollama directly
+      OLLAMA_BASE_URL: "http://ollama-auth-sidecar:11436"
+    # ... rest of your open-webui config
+
+networks:
+  ollama-auth-net:
+    driver: bridge
+    # Restrict to a narrow subnet if your host has multiple docker networks

@@ -1,0 +1,8 @@
+services:
+  - name: test
+    listen: 11436
+    upstream: http://mock-upstream:8080
+    timeout: 30s
+    headers:
+      # A value containing a newline should be rejected
+      X-Custom: "value-line1\nvalue-line2"

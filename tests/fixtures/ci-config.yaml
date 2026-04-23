@@ -1,0 +1,7 @@
+services:
+  - name: test-service
+    listen: 11436
+    upstream: http://127.0.0.1:8080
+    timeout: 30s
+    headers:
+      Authorization: "Bearer ${OPENWEBUI_KEY}"

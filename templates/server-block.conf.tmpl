@@ -1,0 +1,27 @@
+server {
+    listen ${BIND}:${PORT};
+
+    access_log /dev/stdout json_combined;
+    error_log  /dev/stderr warn;
+
+    location = /health {
+        access_log off;
+        return 200 "ok\n";
+    }
+
+    location / {
+        proxy_pass ${UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout ${TIMEOUT};
+        proxy_send_timeout ${TIMEOUT};
+        proxy_connect_timeout 10s;
+
+        # Injected headers — values are fully resolved at entrypoint startup
+${HEADER_DIRECTIVES}
+        proxy_set_header X-Client-Name "${SERVICE_NAME}";
+        proxy_set_header Host $http_host;
+        proxy_set_header Connection "";
+    }
+}
