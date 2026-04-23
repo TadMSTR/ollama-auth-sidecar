@@ -16,7 +16,7 @@ mock_id=$($COMPOSE ps -q mock-upstream 2>/dev/null | head -1)
     sleep 3
     mock_id=$($COMPOSE ps -q mock-upstream | head -1)
 }
-[ -n "$mock_id" ] || die "Could not start mock-upstream"
+[ -n "$mock_id" ] || { echo "ERROR: Could not start mock-upstream" >&2; exit 1; }
 
 # Find the network mock-upstream is on
 network=$(docker inspect "$mock_id" \
@@ -45,6 +45,8 @@ services:
       Authorization: "Bearer ${TEST_KEY}"
 YAML
 
+# Publish port 11450 so we can test from the host without docker exec.
+# docker exec into a container that has exited returns nothing, masking failures.
 container_id=$(docker run -d \
     --network "$network" \
     -e NGINX_BIND=0.0.0.0 \
@@ -52,15 +54,27 @@ container_id=$(docker run -d \
     --tmpfs /tmp:uid=101,gid=101 \
     --tmpfs /var/cache/nginx:uid=101,gid=101 \
     --tmpfs /var/run:uid=101,gid=101 \
+    -p 11450:11450 \
     -v "${TIMEOUT_CONFIG}:/etc/ollama-auth-sidecar/config.yaml:ro" \
     "$IMAGE")
 
 # Wait for nginx to start
 sleep 4
 
-# Hit /slow (upstream sleeps 3s); with 2s timeout we expect 504
-http_code=$(docker exec "$container_id" \
-    wget -qO/dev/null --server-response "http://127.0.0.1:11450/slow" 2>&1 \
+# Verify the container is still running; an early exit means entrypoint failure
+status=$(docker inspect "$container_id" --format '{{.State.Status}}' 2>/dev/null || echo "gone")
+if [ "$status" != "running" ]; then
+    echo "ERROR: sidecar container exited early (status: $status) — entrypoint log:" >&2
+    docker logs "$container_id" >&2 2>/dev/null || true
+    docker rm -f "$container_id" > /dev/null 2>/dev/null || true
+    rm -f "$TIMEOUT_CONFIG"
+    assert_equals "upstream timeout returns 504" "504" "container-exited-early"
+    summary
+    exit 1
+fi
+
+# Hit /slow from the host (upstream sleeps 3s); with 2s timeout we expect 504
+http_code=$(wget -qO/dev/null --server-response "http://127.0.0.1:11450/slow" 2>&1 \
     | awk '/HTTP\//{print $2}' | tail -1)
 
 docker rm -f "$container_id" > /dev/null
