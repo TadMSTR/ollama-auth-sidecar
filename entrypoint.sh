@@ -64,9 +64,10 @@ escape_header_value() {
     local val="$1"
 
     # Reject newlines — these cannot appear in an nginx header directive.
-    # Use printf to produce a literal newline for the comparison (ash-safe).
-    local newline
-    newline=$(printf '\n')
+    # Literal newline in variable (POSIX; command substitution would strip it).
+    # shellcheck disable=SC2039
+    local newline='
+'
     case "$val" in
         *"$newline"*) die "Header value for service '${SERVICE_CTX:-unknown}' contains a newline, which is not allowed in nginx directives" ;;
     esac
