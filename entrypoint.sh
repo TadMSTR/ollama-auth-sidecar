@@ -192,7 +192,7 @@ http {
         '"time":"\$time_iso8601",'
         '"remote_addr":"\$remote_addr",'
         '"request_method":"\$request_method",'
-        '"request_uri":"\$request_uri",'
+        '"request_uri":"\$uri",'
         '"status":\$status,'
         '"request_time":\$request_time,'
         '"upstream_response_time":"\$upstream_response_time",'

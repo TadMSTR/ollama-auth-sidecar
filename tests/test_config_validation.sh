@@ -48,5 +48,6 @@ run_bad_config "${FIXTURES_DIR}/duplicate-port.yaml"      "already used"
 run_bad_config "${FIXTURES_DIR}/unresolved-env-var.yaml"  "unset or empty"
 run_bad_config "${FIXTURES_DIR}/invalid-upstream-url.yaml" "not a valid"
 run_bad_config "${FIXTURES_DIR}/header-with-bare-dollar.yaml" "bare '\$'"
+run_bad_config "${FIXTURES_DIR}/header-special-chars.yaml"    "newline"
 
 summary
