@@ -10,6 +10,26 @@ The sidecar fixes this. Each consumer gets its own listen port and its own key. 
 
 It's a single nginx container with a small config file. No databases, no dashboards, no processes to keep alive.
 
+```mermaid
+flowchart LR
+    owui["Open WebUI"]
+    svc["Script / Service"]
+    tool["Community Tool\n(no auth support)"]
+
+    subgraph sidecar["ollama-auth-sidecar"]
+        p1[":11436\nopenwebui-key"]
+        p2[":11437\nscript-key"]
+        p3[":11438\ntool-key"]
+    end
+
+    ollama["Ollama :11434"]
+
+    owui --> p1
+    svc --> p2
+    tool --> p3
+    p1 & p2 & p3 -->|"Authorization: Bearer injected"| ollama
+```
+
 ## Quick start
 
 ```yaml
